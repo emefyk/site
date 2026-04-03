@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .message-box {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="max-width: 600px;">
+        <h1 class="text-center mb-4">📝 Messages</h1>
+
+        <!-- Formulaire -->
+        <form id="messageForm" class="card p-4 mb-4">
+            <h5>Envoyer un message</h5>
+            <div class="mb-3">
+                <label for="name">Nom :</label>
+                <input type="text" id="name" name="name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="message">Message :</label>
+                <textarea id="message" name="message" class="form-control" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Envoyer</button>
+            <div id="status" class="mt-2"></div>
+        </form>
+
+        <!-- Liste des messages -->
+        <h3>Tous les messages :</h3>
+        <div id="messagesList">
+            <p class="text-muted">Chargement...</p>
+        </div>
+    </div>
+
+    <script>
+        // Charger les messages au démarrage
+        loadMessages();
+
+        // Soumettre le formulaire
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(document.getElementById('messageForm'));
+            const status = document.getElementById('status');
+
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    status.innerHTML = '<p class="text-success">✅ Message envoyé !</p>';
+                    document.getElementById('messageForm').reset();
+                    setTimeout(() => loadMessages(), 500); // Recharger les messages
+                } else {
+                    status.innerHTML = `<p class="text-danger">❌ ${data.error}</p>`;
+                }
+            } catch (err) {
+                status.innerHTML = '<p class="text-danger">❌ Erreur de connexion</p>';
+            }
+        });
+
+        // Récupérer et afficher les messages
+        async function loadMessages() {
+            try {
+                const response = await fetch('/messages');
+                const messages = await response.json();
+
+                const container = document.getElementById('messagesList');
+
+                if (messages.length === 0) {
+                    container.innerHTML = '<p class="text-muted">Aucun message</p>';
+                    return;
+                }
+
+                container.innerHTML = messages.map(msg => `
+                    <div class="message-box">
+                        <strong>${msg.name}</strong> <small class="text-muted">${new Date(msg.date).toLocaleString('fr-FR')}</small>
+                        <p>${msg.message}</p>
+                    </div>
+                `).join('');
+            } catch {
+                document.getElementById('messagesList').innerHTML = '<p class="text-danger">Erreur</p>';
+            }
+        }
+    </script>
+</body>
+
+</html>
